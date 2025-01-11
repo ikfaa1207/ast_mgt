@@ -10,6 +10,78 @@
 
 <body class="bg-gray-100 p-5">
     <div class="max-w-7xl mx-auto">
+        <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div class="bg-white rounded-lg w-full max-w-lg p-6 mx-4 sm:mx-auto overflow-y-auto max-h-[90vh]">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">Edit Asset</h2>
+                    <button onclick="closeEditModal()" class="text-2xl font-bold hover:text-gray-600">&times;</button>
+                </div>
+                <form id="editForm" class="space-y-4">
+                    <input type="hidden" id="editAssetId">
+
+                    <div>
+                        <label for="editName" class="block font-semibold mb-2">Asset Name</label>
+                        <input type="text" id="editName" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label for="editCategory" class="block font-semibold mb-2">Category</label>
+                        <select id="editCategory" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="editReferenceNumber" class="block font-semibold mb-2">Reference Number</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="editReferenceNumber"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button type="button" id="regenerateReference"
+                                class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+                                Regenerate
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">Edit manually or click regenerate to create new reference
+                            based on category
+                        </p>
+                    </div>
+
+                    <div>
+                        <label for="editPersonAccountable" class="block font-semibold mb-2">Person Accountable</label>
+                        <input type="text" id="editPersonAccountable" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label for="editLocation" class="block font-semibold mb-2">Location</label>
+                        <textarea id="editLocation" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[60px]"></textarea>
+                    </div>
+
+                    <div>
+                        <label for="editDescription" class="block font-semibold mb-2">Description</label>
+                        <textarea id="editDescription"
+                            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[60px]"></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeEditModal()"
+                            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save
+                            Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- Image Zoom Modal -->
+        <div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
+            <div class="relative">
+                <img id="zoomedImage" src="" alt="Zoomed asset image" class="max-h-[90vh] max-w-[90vw] object-contain">
+                <button onclick="closeImageModal()"
+                    class="absolute top-4 right-4 text-white text-2xl font-bold">&times;</button>
+            </div>
+        </div>
         <!-- Settings Modal -->
         <div id="settingsModal"
             class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
@@ -32,7 +104,6 @@
 
         <button class="bg-gray-600 text-white px-4 py-2 rounded mb-5 hover:bg-gray-700" onclick="openSettings()">⚙️
             Settings</button>
-
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <h2 class="text-2xl font-bold mb-4">Add New Asset</h2>
@@ -97,6 +168,21 @@
 
             <div class="bg-white rounded-lg shadow-md p-6">
                 <h2 class="text-2xl font-bold mb-4">Asset Inventory</h2>
+                <!-- Search Bar -->
+                <div class="flex-1 max-w-xl">
+                    <div
+                        class="flex items-center bg-gray-100 border border-gray-300 rounded-full focus-within:ring-2 focus-within:ring-blue-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 ml-3" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text" id="searchInput"  
+                            placeholder="Search assets by name, reference number, or person accountable..."  
+                            class="w-full px-4 py-2 bg-gray-100 focus:outline-none rounded-full">
+                    </div>
+                    <div class="mt-2"></div>
+                </div>
                 <div id="assetList" class="max-h-[800px] overflow-y-auto pr-2 space-y-4"></div>
             </div>
         </div>
@@ -122,8 +208,15 @@
         }
 
         // Save assets to localStorage
-        function saveAssets() {
-            localStorage.setItem('assets', JSON.stringify(assets));
+        async function saveAssets() {
+            try {
+                localStorage.setItem('assets', JSON.stringify(assets));
+                return true;
+            } catch (error) {
+                console.error('Error saving assets:', error);
+                showAlert('Error saving changes. Please try again.', 'error');
+                throw error;
+            }
         }
 
         // Show alert message
@@ -240,8 +333,10 @@
         }
 
         // Generate reference number
-        function generateReferenceNumber(prefix) {
-            const categoryAssets = assets.filter(a => a.category === prefix);
+        function generateReferenceNumber(prefix, excludeCurrentRef = '') {
+            const categoryAssets = assets.filter(a =>
+                a.category === prefix && a.referenceNumber !== excludeCurrentRef
+            );
             const nextNumber = (categoryAssets.length + 1).toString().padStart(4, '0');
             return `${prefix}-${nextNumber}`;
         }
@@ -307,6 +402,169 @@
                 stream = null;
             }
         }
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function (e) {
+            const searchTerm = e.target.value.toLowerCase();
+            renderAssets(searchTerm);
+        });
+        // Add event listener for category change in edit form
+        document.getElementById('editCategory').addEventListener('change', function (e) {
+            if (confirm('Changing category will regenerate the reference number. Continue?')) {
+                const currentRef = document.getElementById('editReferenceNumber').value;
+                if (e.target.value) {
+                    document.getElementById('editReferenceNumber').value =
+                        generateReferenceNumber(e.target.value, currentRef);
+                }
+            } else {
+                // Revert category selection if user cancels
+                const assetId = document.getElementById('editAssetId').value;
+                const asset = assets.find(a => a.id === parseInt(assetId));
+                if (asset) {
+                    e.target.value = asset.category;
+                }
+            }
+        });
+        // Add regenerate reference button functionality
+        document.getElementById('regenerateReference').addEventListener('click', function () {
+            const category = document.getElementById('editCategory').value;
+            const currentRef = document.getElementById('editReferenceNumber').value;
+            if (category) {
+                const newReference = generateReferenceNumber(category, currentRef);
+                if (confirm(`Generate new reference number: ${newReference}?`)) {
+                    document.getElementById('editReferenceNumber').value = newReference;
+                }
+            } else {
+                showAlert('Please select a category first', 'error');
+            }
+        });
+        // Edit functionality
+        function openEditModal(assetId) {
+            const asset = assets.find(a => a.id === assetId);
+            if (!asset) return;
+
+            // Populate edit form
+            document.getElementById('editAssetId').value = asset.id;
+            document.getElementById('editName').value = asset.name;
+            document.getElementById('editCategory').value = asset.category;
+            document.getElementById('editReferenceNumber').value = asset.referenceNumber;
+            document.getElementById('editPersonAccountable').value = asset.personAccountable;
+            document.getElementById('editLocation').value = asset.location;
+            document.getElementById('editDescription').value = asset.description || '';
+
+            // Update category dropdown
+            const editCategorySelect = document.getElementById('editCategory');
+            editCategorySelect.innerHTML = '<option value="">Select category</option>';
+            settings.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.prefix;
+                option.textContent = category.name;
+                editCategorySelect.appendChild(option);
+            });
+            editCategorySelect.value = asset.category;
+
+            // Show modal
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editModal');
+            const form = document.getElementById('editForm');
+
+            // Clear form and hide modal
+            form.reset();
+            modal.classList.add('hidden');
+
+            // Clear any existing error messages
+            const alert = document.getElementById('alert');
+            if (alert) {
+                alert.style.display = 'none';
+            }
+        }
+
+        document.querySelector('#editModal .font-bold').addEventListener('click', function (e) {
+            e.preventDefault();
+            closeEditModal();
+        });
+
+        document.getElementById('editModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+
+        // Handle edit form submission
+        document.getElementById('editForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            try {
+                const assetId = parseInt(document.getElementById('editAssetId').value);
+                const newCategory = document.getElementById('editCategory').value;
+                const newReference = document.getElementById('editReferenceNumber').value;
+                const newName = document.getElementById('editName').value.trim();
+                const newPersonAccountable = document.getElementById('editPersonAccountable').value.trim();
+                const newLocation = document.getElementById('editLocation').value.trim();
+
+                // Basic validation
+                if (!newName || !newCategory || !newReference || !newPersonAccountable || !newLocation) {
+                    showAlert('Please fill in all required fields', 'error');
+                    return;
+                }
+
+                // Validate reference number format
+                if (!newReference.startsWith(newCategory)) {
+                    showAlert('Reference number must start with the selected category prefix', 'error');
+                    return;
+                }
+
+                // Check for duplicate reference numbers
+                const duplicateRef = assets.find(a =>
+                    a.id !== assetId &&
+                    a.referenceNumber.toLowerCase() === newReference.toLowerCase()
+                );
+
+                if (duplicateRef) {
+                    showAlert('This reference number is already in use', 'error');
+                    return;
+                }
+
+                // Find asset index
+                const assetIndex = assets.findIndex(a => a.id === assetId);
+                if (assetIndex === -1) {
+                    showAlert('Asset not found', 'error');
+                    return;
+                }
+
+                // Update asset
+                const updatedAsset = {
+                    ...assets[assetIndex],
+                    name: newName,
+                    category: newCategory,
+                    referenceNumber: newReference,
+                    personAccountable: newPersonAccountable,
+                    location: newLocation,
+                    description: document.getElementById('editDescription').value.trim(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                // Update assets array
+                assets[assetIndex] = updatedAsset;
+
+                // Save to localStorage
+                await saveAssets();
+
+                // Update display
+                await renderAssets();
+
+                // Close modal and show success message
+                document.getElementById('editModal').classList.add('hidden');
+                document.getElementById('editForm').reset();
+
+                showAlert('Asset updated successfully');
+            } catch (error) {
+                console.error('Error updating asset:', error);
+                showAlert('Error updating asset. Please try again.', 'error');
+            }
+        });
 
         // Add new asset
         document.getElementById('assetForm').addEventListener('submit', function (e) {
@@ -358,7 +616,7 @@
         }
 
         // Render assets grouped by category
-        function renderAssets() {
+        function renderAssets(searchTerm = '') {
             const assetList = document.getElementById('assetList');
             assetList.innerHTML = '';
 
@@ -376,7 +634,17 @@
                 };
             });
 
-            assets.forEach(asset => {
+            // Filter assets based on search term
+            const filteredAssets = assets.filter(asset => {
+                return !searchTerm ||
+                    asset.name.toLowerCase().includes(searchTerm) ||
+                    asset.referenceNumber.toLowerCase().includes(searchTerm) ||
+                    asset.personAccountable.toLowerCase().includes(searchTerm) ||
+                    asset.location.toLowerCase().includes(searchTerm) ||
+                    (asset.description && asset.description.toLowerCase().includes(searchTerm));
+            });
+
+            filteredAssets.forEach(asset => {
                 if (groupedAssets[asset.category]) {
                     groupedAssets[asset.category].assets.push(asset);
                 }
@@ -384,25 +652,22 @@
 
             // Create category sections
             Object.entries(groupedAssets).forEach(([prefix, categoryGroup]) => {
-                if (categoryGroup.assets.length === 0) return; // Skip empty categories
+                if (categoryGroup.assets.length === 0) return;
 
                 const categorySection = document.createElement('div');
                 categorySection.className = 'bg-gray-50 rounded-lg p-4 mb-4';
 
-                // Create the header
                 const headerDiv = document.createElement('div');
                 headerDiv.className = 'border-b border-gray-200 pb-3 mb-3 sticky top-0 bg-gray-50 z-10';
                 headerDiv.innerHTML = `
-                    <h3 class="text-xl font-semibold text-gray-800">${categoryGroup.name}</h3>
-                    <p class="text-sm text-gray-600">Total Assets: ${categoryGroup.assets.length}</p>
-                `;
+                        <h3 class="text-xl font-semibold text-gray-800">${categoryGroup.name}</h3>
+                        <p class="text-sm text-gray-600">Total Assets: ${categoryGroup.assets.length}</p>
+                    `;
                 categorySection.appendChild(headerDiv);
 
-                // Create scrollable content container
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'space-y-3 max-h-[300px] overflow-y-auto pr-2';
 
-                // Add assets under this category
                 categoryGroup.assets.forEach(asset => {
                     const assetElement = document.createElement('div');
                     assetElement.className = 'bg-white rounded-lg border border-gray-200 p-4 grid grid-cols-[1fr,auto] gap-4 transform transition-transform hover:translate-x-2 hover:shadow-md';
@@ -413,9 +678,14 @@
                             <p class="text-sm"><span class="font-semibold">Person Accountable:</span> ${asset.personAccountable}</p>
                             <p class="text-sm"><span class="font-semibold">Location:</span> ${asset.location}</p>
                             ${asset.description ? `<p class="text-sm"><span class="font-semibold">Description:</span> ${asset.description}</p>` : ''}
-                            <button onclick="deleteAsset(${asset.id})" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 mt-2">Delete</button>
+                            <div class="flex space-x-2 mt-2">
+                                <button onclick="openEditModal(${asset.id})" 
+                                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Edit</button>
+                                <button onclick="deleteAsset(${asset.id})" 
+                                    class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Delete</button>
+                            </div>
                         </div>
-                        ${asset.imageData ? `<img src="${asset.imageData}" class="w-32 h-32 object-cover rounded" alt="Asset image">` : ''}
+                        ${asset.imageData ? `<img src="${asset.imageData}" class="w-32 h-32 object-cover rounded cursor-pointer" alt="Asset image" onclick="openImageModal('${asset.imageData}')">` : ''}
                     `;
                     contentDiv.appendChild(assetElement);
                 });
@@ -423,7 +693,31 @@
                 categorySection.appendChild(contentDiv);
                 assetList.appendChild(categorySection);
             });
+
+            // Show "no results" message if search yields no results
+            if (searchTerm && !assetList.hasChildNodes()) {
+                assetList.innerHTML = '<p class="text-gray-500">No assets found matching your search</p>';
+            }
         }
+
+        // Image zoom functionality
+        function openImageModal(imageUrl) {
+            const modal = document.getElementById('imageModal');
+            const zoomedImage = document.getElementById('zoomedImage');
+            zoomedImage.src = imageUrl;
+            modal.classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+        }
+
+        // Close image modal when clicking outside
+        document.getElementById('imageModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeImageModal();
+            }
+        });
 
         // Initialize on page load
         window.addEventListener('load', function () {
