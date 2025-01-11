@@ -104,6 +104,51 @@
 
         <button class="bg-gray-600 text-white px-4 py-2 rounded mb-5 hover:bg-gray-700" onclick="openSettings()">⚙️
             Settings</button>
+        <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 ml-2" onclick="clearAllData()">
+            Clear All Data
+        </button>
+        <!-- Dashboard Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- Total Assets Card -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="text-gray-500 text-sm font-semibold">Total Assets</h3>
+                <div class="flex items-center mt-2">
+                    <span class="text-3xl font-bold text-gray-800" id="totalAssets">0</span>
+                </div>
+            </div>
+
+            <!-- Total Value Card -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="text-gray-500 text-sm font-semibold">Categories</h3>
+                <div class="flex items-center mt-2">
+                    <span class="text-3xl font-bold text-gray-800" id="totalCategories">0</span>
+                </div>
+            </div>
+
+            <!-- Recently Added Card -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="text-gray-500 text-sm font-semibold">Recently Added</h3>
+                <div class="flex items-center mt-2">
+                    <span class="text-3xl font-bold text-gray-800" id="recentlyAdded">0</span>
+                    <span class="text-sm text-gray-500 ml-2">last 7 days</span>
+                </div>
+            </div>
+
+            <!-- Most Active Category Card -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="text-gray-500 text-sm font-semibold">Most Active Category</h3>
+                <div class="flex items-center mt-2">
+                    <span class="text-3xl font-bold text-gray-800" id="mostActiveCategory">-</span>
+                </div>
+            </div>
+        </div>
+        <!-- Category Stats Section -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <h3 class="text-lg font-semibold mb-4">Assets by Category</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="categoryStats">
+                <!-- Category stats will be inserted here -->
+            </div>
+        </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <h2 class="text-2xl font-bold mb-4">Add New Asset</h2>
@@ -205,12 +250,14 @@
         function saveSettings() {
             localStorage.setItem('assetSettings', JSON.stringify(settings));
             updateCategoryDropdown();
+            updateDashboard(); // Update dashboard when settings change
         }
 
         // Save assets to localStorage
         async function saveAssets() {
             try {
                 localStorage.setItem('assets', JSON.stringify(assets));
+                updateDashboard(); // Update dashboard after saving
                 return true;
             } catch (error) {
                 console.error('Error saving assets:', error);
@@ -262,6 +309,57 @@
                 <button type="button" onclick="removeCategory(this)" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Delete</button>
             `;
             categoryList.appendChild(div);
+        }
+
+        // Function to update dashboard statistics
+        function updateDashboard() {
+            // Update total assets
+            document.getElementById('totalAssets').textContent = assets.length;
+
+            // Update total categories
+            document.getElementById('totalCategories').textContent = settings.categories.length;
+
+            // Update recently added (last 7 days)
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const recentAssets = assets.filter(asset => new Date(asset.createdAt) > sevenDaysAgo);
+            document.getElementById('recentlyAdded').textContent = recentAssets.length;
+
+            // Calculate most active category
+            const categoryCounts = {};
+            assets.forEach(asset => {
+                categoryCounts[asset.category] = (categoryCounts[asset.category] || 0) + 1;
+            });
+
+            let mostActiveCategory = '-';
+            let maxCount = 0;
+
+            Object.entries(categoryCounts).forEach(([category, count]) => {
+                if (count > maxCount) {
+                    maxCount = count;
+                    mostActiveCategory = settings.categories.find(c => c.prefix === category)?.name || category;
+                }
+            });
+
+            document.getElementById('mostActiveCategory').textContent = mostActiveCategory;
+
+            // Update category stats
+            const categoryStats = document.getElementById('categoryStats');
+            categoryStats.innerHTML = '';
+
+            settings.categories.forEach(category => {
+                const categoryCount = assets.filter(asset => asset.category === category.prefix).length;
+                const categoryCard = document.createElement('div');
+                categoryCard.className = 'bg-gray-50 rounded-lg p-3';
+                categoryCard.innerHTML = `
+                <h4 class="text-sm font-semibold text-gray-600">${category.name}</h4>
+                <div class="flex items-center justify-between mt-2">
+                    <span class="text-2xl font-bold text-gray-800">${categoryCount}</span>
+                    <span class="text-xs text-gray-500">assets</span>
+                </div>
+            `;
+                categoryStats.appendChild(categoryCard);
+            });
         }
 
         // Save category
@@ -480,7 +578,41 @@
                 alert.style.display = 'none';
             }
         }
+        // Function to check local storage data
+        function checkLocalStorage() {
+            console.log('Assets in localStorage:', localStorage.getItem('assets'));
+            console.log('Settings in localStorage:', localStorage.getItem('assetSettings'));
 
+            // Parse and show current data
+            const currentAssets = JSON.parse(localStorage.getItem('assets')) || [];
+            const currentSettings = JSON.parse(localStorage.getItem('assetSettings')) || { categories: [] };
+
+            console.log('Parsed Assets:', currentAssets);
+            console.log('Parsed Settings:', currentSettings);
+        }
+        // Function to clear all data
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+                // Clear arrays
+                assets = [];
+                settings.categories = [];
+
+                // Clear localStorage
+                localStorage.removeItem('assets');
+                localStorage.removeItem('assetSettings');
+
+                // Reset UI
+                updateDashboard();
+                renderAssets();
+                updateCategoryDropdown();
+
+                // Show confirmation
+                showAlert('All data has been cleared');
+
+                // Log the current state
+                console.log('Local storage after clearing:', localStorage);
+            }
+        }
         document.querySelector('#editModal .font-bold').addEventListener('click', function (e) {
             e.preventDefault();
             closeEditModal();
@@ -723,6 +855,8 @@
         window.addEventListener('load', function () {
             updateCategoryDropdown();
             renderAssets();
+            checkLocalStorage();
+            updateDashboard(); // Update dashboard on load
             showAlert('Asset Management System Ready', 'success');
         });
     </script>
