@@ -680,9 +680,9 @@
                             ${asset.description ? `<p class="text-sm"><span class="font-semibold">Description:</span> ${asset.description}</p>` : ''}
                             <div class="flex space-x-2 mt-2">
                                 <button onclick="openEditModal(${asset.id})" 
-                                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAtElEQVR4nO3VsQ7BUBSAYQ8jNpvBLBGD1eglOhl1wnt5BDtPQEzWT26iSVUFiXul0X+9Tb+cc5O202lrcshwwg6DVGjuvjOGqdEyPvgFHNpFg1/gxxhQ/gaefRst2lTOFqWzZSy0qG7yPDZaO3kqNA7uPTTJndbVop/nn9Y7uf1PX/W9j0MR5snREMbJ0RB6KdfbL78YXYwwwyXmetfPpsI0ChrCIck9VsMWe6zC2h8eaGtiV/Cn6J+W9xnAAAAAAElFTkSuQmCC" alt="edit--v1"></button>
+                                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Edit</button>
                                 <button onclick="deleteAsset(${asset.id})" 
-                                    class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAAsTAAALEwEAmpwYAAAArElEQVR4nOXQOwrCQBRG4QFts4QsQsu4h2CZUqy1CegetIx70H0YXYi2CpYRFE4IDFh6H1iof3WbOR9MCH8xoARuvNbdpSVU41/9aWAffnvAxvE9lQRYOoCFBCgcQCEBRg4gkwCpA0glQA94GOJPoP8WiMjZAJxE8QgcDcBBA+wMwFYDrA3ASgPMDcBMA4wNQK4BhgZgoAES4K6IN90bMRCRKXAVxC/ARBX/qrVY5P+kHmmF4gAAAABJRU5ErkJggg==" alt="filled-trash"></button>
+                                    class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Delete</button>
                             </div>
                         </div>
                         ${asset.imageData ? `<img src="${asset.imageData}" class="w-32 h-32 object-cover rounded cursor-pointer" alt="Asset image" onclick="openImageModal('${asset.imageData}')">` : ''}
